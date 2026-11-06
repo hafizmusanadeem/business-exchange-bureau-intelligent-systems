@@ -1,102 +1,99 @@
-# BXB Pulse – Modules 1 & 2 Integration Guide
+# BXB Pulse – Modules 1–6 Integration Guide
 
 Drop-in layer for the official
 [full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template).
 
-## Files provided
+## Files
 
 ```
 backend/app/bxb/
-  __init__.py
-  models.py              # Profile, Listing, InvestorProfile, InvestorEvent
-  synthetic.py           # 36-month synthetic data generator (stdlib only)
-  seed.py                # loads synthetic data + 3 demo users
-  sentiment.py           # Module 2 pure functions (shares, trends, segments, facts)
+  models.py, synthetic.py, seed.py
+  sentiment.py
+  trends.py, forecast.py
+  matching.py, metrics.py, eval_matching.py
+  finance_extract.py, finance_validate.py, valuation.py, finance_synth.py
+  report_facts.py, grounding.py, report_writer.py, eval_grounding.py
 
 backend/app/api/routes/
-  bxb.py                 # /bxb/* foundation endpoints
-  bxb_sentiment.py       # /bxb/sentiment/* endpoints
+  bxb.py, bxb_sentiment.py, bxb_trends.py, bxb_matching.py,
+  bxb_financials.py, bxb_reports.py
 
 backend/app/alembic/versions/
-  2026_11_06_0001_bxb_foundation.py
+  2026_11_06_0001_bxb_foundation.py   # includes FinancialFact
 
 tests/
-  test_synthetic.py
-  test_sentiment.py
+  test_synthetic.py, test_sentiment.py, test_trends.py,
+  test_matching.py, test_finance.py, test_grounding.py
 ```
 
 ## Integration steps
 
-1. **Copy the folders** into your template checkout:
+1. Copy into the template:
    ```bash
    cp -r backend/app/bxb               <template>/backend/app/
-   cp    backend/app/api/routes/bxb.py           <template>/backend/app/api/routes/
-   cp    backend/app/api/routes/bxb_sentiment.py <template>/backend/app/api/routes/
+   cp    backend/app/api/routes/bxb*.py <template>/backend/app/api/routes/
    cp    backend/app/alembic/versions/2026_11_06_0001_bxb_foundation.py \
          <template>/backend/app/alembic/versions/
    ```
 
-2. **Make Alembic see the new models** – add one line to `backend/app/models.py`:
+2. Register models (bottom of `app/models.py`):
    ```python
-   # at the bottom of app/models.py
-   from app.bxb.models import *  # noqa: F401,F403  # ensure tables are registered
+   from app.bxb.models import *  # noqa: F401,F403
    ```
 
-3. **Register both routers** – in `backend/app/api/main.py`:
+3. Register routers (`app/api/main.py`):
    ```python
-   from app.api.routes import bxb, bxb_sentiment
-   api_router.include_router(bxb.router)
-   api_router.include_router(bxb_sentiment.router)
+   from app.api.routes import (
+       bxb, bxb_sentiment, bxb_trends, bxb_matching, bxb_financials, bxb_reports
+   )
+   for r in (bxb, bxb_sentiment, bxb_trends, bxb_matching, bxb_financials, bxb_reports):
+       api_router.include_router(r.router)
    ```
 
-4. **Fix the migration’s `down_revision`**:
+4. Dependencies in `backend/pyproject.toml`:
+   ```
+   scikit-learn
+   numpy
+   joblib
+   pdfplumber
+   ```
+
+5. Migration + seed:
    ```bash
    cd backend
-   alembic heads          # note the current head
-   # edit 2026_11_06_0001_bxb_foundation.py → set down_revision = "<that id>"
+   # set down_revision in the migration to the current alembic head
    alembic upgrade head
-   ```
-
-5. **Seed the data**:
-   ```bash
    python -m app.bxb.seed
    ```
 
-## Demo credentials (all passwords = `demopass123`)
+## Demo credentials (password = `demopass123`)
 
-| Email              | Role     | Purpose                          |
-|--------------------|----------|----------------------------------|
-| seller@bxb.demo    | seller   | owns every 7th listing           |
-| investor@bxb.demo  | investor | linked to InvestorProfile id=1   |
-| admin@bxb.demo     | admin    | is_superuser = True              |
+| Email              | Role     |
+|--------------------|----------|
+| seller@bxb.demo    | seller   |
+| investor@bxb.demo  | investor |
+| admin@bxb.demo     | admin    |
 
-## Module 2 endpoints (`/bxb/sentiment`)
+## Key endpoints (Modules 5–6)
 
-| Endpoint | Query params | Purpose |
-|----------|--------------|---------|
-| `GET /sectors` | `quarter=2026-Q2` | Sector shares of qualified demand + Wilson 95% CIs |
-| `GET /trend` | `q_from=2025-Q2&q_to=2026-Q2` | Share change with two-proportion z-test labels |
-| `GET /countries` | `quarter=2026-Q2` | Country mix of active investors |
-| `GET /segments` | `quarter=2026-Q2` | Rule-based investor segments |
-| `GET /facts` | `q_from=…&q_to=…` | Structured number-bearing facts for Module 6 |
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `POST /bxb/financials/listings/{id}/upload` | Owner / admin | Upload financial PDF (10 MB max) |
+| `GET /bxb/financials/listings/{id}/summary` | Owner / admin | Facts, validation flags, valuation range |
+| `GET /bxb/reports/market?q_from=&q_to=` | Authenticated | Grounded market report (template or LLM) |
 
-### Definitions (kept in code + README)
-
-- **Demand unit** = unique `(investor, listing)` pair with a qualified event (enquiry / meeting / offer) inside the period. Views and saves never count.
-- **Sector share** = units in sector / all units, in percent.
-- **Trend** = “increasing” / “decreasing” only when a two-proportion z-test gives p < 0.05 **and** the move is ≥ 1 percentage point; otherwise “stable”.
-- Quarters with < 30 units are flagged `low_confidence`.
-- `facts()` returns the structured statements that the Grounded AI reports module may verbalise.
-
-## Running the unit tests (no DB needed)
+## Offline evaluation
 
 ```bash
-cd <this-package>
-python -m pytest tests/ -q
+PYTHONPATH=backend python -m app.bxb.eval_matching
+PYTHONPATH=backend python -m app.bxb.finance_synth
+PYTHONPATH=backend python -m app.bxb.eval_grounding
 ```
 
-## Notes for later modules
+## Unit tests
 
-- Asking price is stored and exposed; never present it as a realised sale price.
-- All synthetic data is labelled; re-point the same models at real BXB tables when ready.
-- Module 2 is pure functions over the event stream – the same code works offline or against Postgres.
+```bash
+PYTHONPATH=backend python -m pytest tests/ -q
+```
+
+Expect ~55 tests when pdfplumber is installed.

@@ -1,39 +1,38 @@
-# BXB Pulse – Modules 1 & 2 (MVP)
+# BXB Pulse – Modules 1–6 (MVP)
 
-Clean, template-ready implementation of Steps 1–2 of the BXB Pulse development plan.
+Clean, template-ready implementation of Steps 1–6 of the BXB Pulse development plan.
 
-## What is included
+## Modules
 
-### Module 1 – Foundation
-- **Roles** – seller / investor / admin (`Profile` table linked to the template `User`)
-- **Schema** – `Listing`, `InvestorProfile`, `InvestorEvent`
-- **Qualified interest** – `EventKind` + `QUALIFIED` set (views are never counted as demand)
-- **Synthetic generator** – 36 months of history with planted demand/supply signals
-- **Seed script** – synthetic data + three demo users with known passwords
-- **API routes** – list / create listings, change status, upsert investor profile, record events
-- **Alembic migration stub**
-
-### Module 2 – Investor Sentiment
-- Pure functions (`sentiment.py`) for sector shares, trends, country mix, segments and facts
-- Wilson 95% confidence intervals and two-proportion z-test for trend labels
-- API under `/bxb/sentiment` (sectors, trend, countries, segments, facts)
-- Unit tests that prove the planted Healthcare rise is detected
+| # | Name | Key files | API prefix |
+|---|------|-----------|------------|
+| 1 | Foundation | models, synthetic, seed | `/bxb` |
+| 2 | Investor Sentiment | sentiment | `/bxb/sentiment` |
+| 3 | Sale Trends & Forecast | trends, forecast | `/bxb/trends` |
+| 4 | Investor Matching | matching, metrics, eval_matching | `/bxb/matching` |
+| 5 | Financial Intelligence | finance_extract, finance_validate, valuation, finance_synth | `/bxb/financials` |
+| 6 | Grounded AI Reports | report_facts, grounding, report_writer, eval_grounding | `/bxb/reports` |
 
 ## Quick start
 
-See [`docs/MODULE1_INTEGRATION.md`](docs/MODULE1_INTEGRATION.md) for the exact copy-paste steps into the official FastAPI full-stack template.
+See [`docs/MODULE1_INTEGRATION.md`](docs/MODULE1_INTEGRATION.md).
 
-## Design decisions (aligned with the plan)
+## Design highlights
 
-| Decision | Rationale |
-|----------|-----------|
-| `InvestorEvent` instead of a single `Enquiry` table | Supports the full sentiment definition (save / enquiry / meeting / offer) while still excluding page views |
-| Demand unit = unique (investor, listing) | Prevents one active investor from dominating a sector’s share |
-| Trend requires p < 0.05 **and** ≥ 1 pt move | Avoids calling noise “increasing” |
-| Explicit primary keys in the seed | Keeps synthetic IDs stable so later modules can refer to the same records |
-| Demo users with fixed emails | Lets you exercise the authenticated endpoints immediately |
-| No production hardening | MVP priority is speed; Docker / CI / rate-limiting stay with the template |
+- **Qualified demand only** – views never count; demand unit = unique (investor, listing).
+- **Asking price ≠ sale price** – every market response says so explicitly.
+- **Honest forecasts** – richer model only if it beats baseline by ≥ 5% MAE.
+- **Hard filters before ranking** – model cannot override sector/budget/EBITDA.
+- **Financial facts with full provenance** – file, page, table, row, col, bbox; unknown labels listed as unmapped, never guessed.
+- **Grounded reports** – every number must cite a fact; verifier is plain code; LLM path falls back to template on any failure.
 
-## Next modules
+## Dependencies
 
-Once this is integrated you can start Module 3 (Business Sale Trends & Demand vs Supply) against the same tables and synthetic events.
+- Modules 1–3: stdlib only for metrics
+- Module 4: `scikit-learn`, `numpy`, `joblib`
+- Module 5: `pdfplumber` (+ `python-multipart` already in the template)
+- Module 6 LLM path (optional): Anthropic API key + `BXB_LLM_ENABLED=1`
+
+## Stretch (not included)
+
+Module 7 (Deal workspace) remains optional per the plan.

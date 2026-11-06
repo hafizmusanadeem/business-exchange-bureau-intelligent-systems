@@ -1,11 +1,25 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 
-from app.api.routes import bxb, bxb_sentiment
+from app.api.routes import (
+    bxb,
+    bxb_financials,
+    bxb_matching,
+    bxb_reports,
+    bxb_sentiment,
+    bxb_trends,
+)
 
 app = FastAPI(title="BXB Pulse")
 
-app.include_router(bxb.router)
-app.include_router(bxb_sentiment.router)
+for _module in (
+    bxb,
+    bxb_sentiment,
+    bxb_trends,
+    bxb_matching,
+    bxb_financials,
+    bxb_reports,
+):
+    app.include_router(_module.router)
 
 
 @app.get("/health")

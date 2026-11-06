@@ -92,3 +92,27 @@ class InvestorEvent(SQLModel, table=True):
     kind: EventKind
     qualified: bool = Field(index=True)
     occurred_on: date = Field(default_factory=date.today, index=True)
+
+
+class FinancialFact(SQLModel, table=True):
+    """One extracted figure with full provenance (Module 5).
+
+    Never edited in place: corrections add a new row.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    listing_id: int = Field(foreign_key="listing.id", index=True)
+    metric: str = Field(index=True, max_length=40)
+    period: str = Field(max_length=10)
+    value: float
+    raw: str = Field(max_length=80)
+    label: str = Field(max_length=160)
+    file_name: str = Field(max_length=200)
+    page: int
+    table_index: int
+    row: int
+    col: int
+    bbox: list[float] | None = Field(default=None, sa_column=Column(JSON))
+    scale: float = 1.0
+    confidence: float = 1.0
+    mapped_by: str = "rules"
