@@ -24,9 +24,9 @@ from app.bxb.models import (
 )
 from app.bxb.synthetic import generate
 from app.core.config import settings
-from app.core.db import engine
+from app.bxb.database import engine
 from app.core.security import get_password_hash
-from app.models import User
+from app.bxb.models import User
 
 
 # Fixed demo users so the interactive API can be exercised immediately.
