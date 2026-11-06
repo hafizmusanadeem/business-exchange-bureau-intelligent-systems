@@ -19,16 +19,16 @@ from app.bxb.models import (
     EventKind,
     InvestorEvent,
     InvestorProfile,
-    InvestorProfileBase,
     Listing,
     ListingBase,
     ListingStatus,
 )
+from app.bxb.schemas import InvestorProfileIn, ListingPublic, ListingsPublic
 
 router = APIRouter(prefix="/bxb", tags=["bxb"])
 
 
-@router.get("/listings")
+@router.get("/listings", response_model=ListingsPublic)
 def list_listings(
     session: SessionDep,
     sector: str | None = None,
@@ -59,7 +59,7 @@ def list_listings(
     return {"count": total, "data": rows}
 
 
-@router.post("/listings", response_model=Listing)
+@router.post("/listings", response_model=ListingPublic)
 def create_listing(
     session: SessionDep, user: CurrentUser, body: ListingBase
 ) -> Any:
@@ -72,7 +72,7 @@ def create_listing(
     return item
 
 
-@router.patch("/listings/{listing_id}/status", response_model=Listing)
+@router.patch("/listings/{listing_id}/status", response_model=ListingPublic)
 def set_status(
     listing_id: int,
     status: ListingStatus,
@@ -100,14 +100,12 @@ def set_status(
 def upsert_my_profile(
     session: SessionDep,
     user: CurrentUser,
-    body: InvestorProfileBase,
-    sectors: list[str] = [],
-    emirates: list[str] = [],
+    body: InvestorProfileIn,
 ) -> Any:
     prof = session.exec(
         select(InvestorProfile).where(InvestorProfile.user_id == user.id)
     ).first()
-    data = body.model_dump() | {"sectors": sectors, "emirates": emirates}
+    data = body.model_dump()
     if prof:
         prof.sqlmodel_update(data)
     else:

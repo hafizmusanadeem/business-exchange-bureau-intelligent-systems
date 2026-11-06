@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import uuid
 
-from sqlmodel import Session, select
+from sqlalchemy import text
+from sqlmodel import Session, func, select
 
 from app.bxb.models import (
     EventKind,
@@ -22,6 +23,7 @@ from app.bxb.models import (
     Role,
 )
 from app.bxb.synthetic import generate
+from app.core.config import settings
 from app.core.db import engine
 from app.core.security import get_password_hash
 from app.models import User
@@ -79,10 +81,50 @@ def _ensure_demo_users(session: Session) -> dict[str, uuid.UUID]:
     return id_map
 
 
+# Tables whose ids are inserted explicitly above, so their SERIAL sequences lag behind.
+SEQUENCED_TABLES = ("listing", "investorprofile", "investorevent")
+
+
+def _guard_environment() -> None:
+    """The demo users have known passwords (one is a superuser): local only."""
+    if settings.ENVIRONMENT != "local":
+        raise SystemExit(
+            f"Refusing to seed: ENVIRONMENT={settings.ENVIRONMENT!r}. "
+            "This script creates accounts with published passwords and is local-only."
+        )
+
+
+def _already_seeded(session: Session) -> bool:
+    return session.exec(select(func.count()).select_from(Listing)).one() > 0
+
+
+def _sync_sequences(session: Session) -> None:
+    """Inserting explicit ids bypasses the sequences, so the next API insert would
+    reuse id 1 and fail with a duplicate key. Move each sequence past MAX(id).
+    Empty table -> setval(seq, 1, false), so the next id is 1. No commit here.
+    """
+    if session.get_bind().dialect.name != "postgresql":
+        return
+    for table in SEQUENCED_TABLES:  # constant names, never user input
+        session.execute(
+            text(
+                f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "
+                f"COALESCE(MAX(id), 1), MAX(id) IS NOT NULL) FROM {table}"
+            )
+        )
+
+
 def main() -> None:
-    d = generate()  # 36 months, planted trends
+    _guard_environment()
     with Session(engine) as s:
         user_ids = _ensure_demo_users(s)
+        if _already_seeded(s):
+            # Re-running is safe, and also repairs a DB seeded by the older script.
+            _sync_sequences(s)
+            s.commit()
+            print("Listings already present: seeding skipped, id sequences re-synced.")
+            return
+        d = generate()  # 36 months, planted trends
         seller_id = user_ids["seller@bxb.demo"]
         investor_uid = user_ids["investor@bxb.demo"]
 
@@ -108,7 +150,7 @@ def main() -> None:
                 )
             )
         s.add_all(listings)
-        s.commit()
+        s.flush()  # one transaction for the whole seed: all-or-nothing
 
         # --- Investor profiles (explicit ids)
         inv_id_map: dict[int, int] = {}
@@ -129,7 +171,7 @@ def main() -> None:
             )
             s.add(prof)
             inv_id_map[raw["id"]] = raw["id"]
-        s.commit()
+        s.flush()
 
         # --- Events (now ids line up)
         events = [
@@ -145,6 +187,8 @@ def main() -> None:
             for raw in d["events"]
         ]
         s.add_all(events)
+        s.flush()
+        _sync_sequences(s)
         s.commit()
 
     print(

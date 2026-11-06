@@ -1,0 +1,210 @@
+diff -ruN a/backend/app/api/routes/bxb.py b/backend/app/api/routes/bxb.py
+--- a/backend/app/api/routes/bxb.py
++++ b/backend/app/api/routes/bxb.py
+@@ -19,16 +19,16 @@
+     EventKind,
+     InvestorEvent,
+     InvestorProfile,
+-    InvestorProfileBase,
+     Listing,
+     ListingBase,
+     ListingStatus,
+ )
++from app.bxb.schemas import InvestorProfileIn, ListingPublic, ListingsPublic
+ 
+ router = APIRouter(prefix="/bxb", tags=["bxb"])
+ 
+ 
+-@router.get("/listings")
++@router.get("/listings", response_model=ListingsPublic)
+ def list_listings(
+     session: SessionDep,
+     sector: str | None = None,
+@@ -59,7 +59,7 @@
+     return {"count": total, "data": rows}
+ 
+ 
+-@router.post("/listings", response_model=Listing)
++@router.post("/listings", response_model=ListingPublic)
+ def create_listing(
+     session: SessionDep, user: CurrentUser, body: ListingBase
+ ) -> Any:
+@@ -72,7 +72,7 @@
+     return item
+ 
+ 
+-@router.patch("/listings/{listing_id}/status", response_model=Listing)
++@router.patch("/listings/{listing_id}/status", response_model=ListingPublic)
+ def set_status(
+     listing_id: int,
+     status: ListingStatus,
+@@ -100,14 +100,12 @@
+ def upsert_my_profile(
+     session: SessionDep,
+     user: CurrentUser,
+-    body: InvestorProfileBase,
+-    sectors: list[str] = [],
+-    emirates: list[str] = [],
++    body: InvestorProfileIn,
+ ) -> Any:
+     prof = session.exec(
+         select(InvestorProfile).where(InvestorProfile.user_id == user.id)
+     ).first()
+-    data = body.model_dump() | {"sectors": sectors, "emirates": emirates}
++    data = body.model_dump()
+     if prof:
+         prof.sqlmodel_update(data)
+     else:
+diff -ruN a/backend/app/bxb/schemas.py b/backend/app/bxb/schemas.py
+--- a/backend/app/bxb/schemas.py
++++ b/backend/app/bxb/schemas.py
+@@ -0,0 +1,49 @@
++"""API schemas for the BXB routes.
++
++Kept apart from the table models so the public contract can change without
++touching the database layer.
++"""
++from __future__ import annotations
++
++from datetime import date
++
++from pydantic import model_validator
++from sqlmodel import Field, SQLModel
++
++from app.bxb.models import InvestorProfileBase, ListingBase, ListingStatus
++
++
++class ListingPublic(ListingBase):
++    """What the marketplace may show about a listing.
++
++    Deliberately has no ``owner_id``: sellers can be anonymous, and a response
++    model is the only thing standing between a table row and the wire.
++    """
++
++    id: int
++    status: ListingStatus
++    listed_on: date
++    closed_on: date | None = None
++
++
++class ListingsPublic(SQLModel):
++    count: int
++    data: list[ListingPublic]
++
++
++class InvestorProfileIn(InvestorProfileBase):
++    """Single JSON body for POST /bxb/investors/me.
++
++    Before, ``sectors`` and ``emirates`` were bare ``list[str]`` parameters next to a
++    body model, which FastAPI treats as a second body field and forces an
++    awkward ``{"body": {...}, "sectors": [...]}`` payload.
++    """
++
++    sectors: list[str] = Field(default_factory=list, max_length=20)
++    emirates: list[str] = Field(default_factory=list, max_length=20)
++
++    @model_validator(mode="after")
++    def _budget_range(self) -> "InvestorProfileIn":
++        if self.budget_max < self.budget_min:
++            raise ValueError("budget_max must be >= budget_min")
++        return self
+diff -ruN a/backend/app/bxb/seed.py b/backend/app/bxb/seed.py
+--- a/backend/app/bxb/seed.py
++++ b/backend/app/bxb/seed.py
+@@ -10,7 +10,8 @@
+ 
+ import uuid
+ 
+-from sqlmodel import Session, select
++from sqlalchemy import text
++from sqlmodel import Session, func, select
+ 
+ from app.bxb.models import (
+     EventKind,
+@@ -22,6 +23,7 @@
+     Role,
+ )
+ from app.bxb.synthetic import generate
++from app.core.config import settings
+ from app.core.db import engine
+ from app.core.security import get_password_hash
+ from app.models import User
+@@ -79,10 +81,50 @@
+     return id_map
+ 
+ 
++# Tables whose ids are inserted explicitly above, so their SERIAL sequences lag behind.
++SEQUENCED_TABLES = ("listing", "investorprofile", "investorevent")
++
++
++def _guard_environment() -> None:
++    """The demo users have known passwords (one is a superuser): local only."""
++    if settings.ENVIRONMENT != "local":
++        raise SystemExit(
++            f"Refusing to seed: ENVIRONMENT={settings.ENVIRONMENT!r}. "
++            "This script creates accounts with published passwords and is local-only."
++        )
++
++
++def _already_seeded(session: Session) -> bool:
++    return session.exec(select(func.count()).select_from(Listing)).one() > 0
++
++
++def _sync_sequences(session: Session) -> None:
++    """Inserting explicit ids bypasses the sequences, so the next API insert would
++    reuse id 1 and fail with a duplicate key. Move each sequence past MAX(id).
++    Empty table -> setval(seq, 1, false), so the next id is 1. No commit here.
++    """
++    if session.get_bind().dialect.name != "postgresql":
++        return
++    for table in SEQUENCED_TABLES:  # constant names, never user input
++        session.execute(
++            text(
++                f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "
++                f"COALESCE(MAX(id), 1), MAX(id) IS NOT NULL) FROM {table}"
++            )
++        )
++
++
+ def main() -> None:
+-    d = generate()  # 36 months, planted trends
++    _guard_environment()
+     with Session(engine) as s:
+         user_ids = _ensure_demo_users(s)
++        if _already_seeded(s):
++            # Re-running is safe, and also repairs a DB seeded by the older script.
++            _sync_sequences(s)
++            s.commit()
++            print("Listings already present: seeding skipped, id sequences re-synced.")
++            return
++        d = generate()  # 36 months, planted trends
+         seller_id = user_ids["seller@bxb.demo"]
+         investor_uid = user_ids["investor@bxb.demo"]
+ 
+@@ -108,7 +150,7 @@
+                 )
+             )
+         s.add_all(listings)
+-        s.commit()
++        s.flush()  # one transaction for the whole seed: all-or-nothing
+ 
+         # --- Investor profiles (explicit ids)
+         inv_id_map: dict[int, int] = {}
+@@ -129,7 +171,7 @@
+             )
+             s.add(prof)
+             inv_id_map[raw["id"]] = raw["id"]
+-        s.commit()
++        s.flush()
+ 
+         # --- Events (now ids line up)
+         events = [
+@@ -145,6 +187,8 @@
+             for raw in d["events"]
+         ]
+         s.add_all(events)
++        s.flush()
++        _sync_sequences(s)
+         s.commit()
+ 
+     print(
