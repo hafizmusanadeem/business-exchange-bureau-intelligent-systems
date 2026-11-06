@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BXB | UAE Business Exchange Bureau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/tailwind-config.js"></script>
+<style>html{scroll-behavior:smooth}body{margin:0}section[id]{scroll-margin-top:90px}</style>
+</head>
+<body class="bg-surface-canvas text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<div id="site-header"></div>
+
+<main class="w-full pt-20 flex-1">
+
+  <!-- HERO + FILTERS -->
+  <section class="bg-surface-card">
+    <div class="max-w-[1360px] mx-auto px-gutter py-space-xl space-y-space-lg">
+      <div class="flex flex-wrap items-center justify-between gap-space-sm">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low">
+          <span class="inline-block w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span>
+          <span class="font-label-badge text-label-badge tracking-wider uppercase">UAE business marketplace</span>
+          <span class="text-outline">•</span>
+          <span id="hero-count" class="font-label-numeric text-label-sm text-primary font-semibold">… active listings</span>
+        </div>
+        <div class="flex items-center gap-space-md text-on-surface-variant font-body-sm text-body-sm">
+          <span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-[16px]">lock</span>Anonymous sellers</span>
+          <span class="hidden sm:inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-accent-gold text-[16px]">query_stats</span>Qualified-demand analytics</span>
+        </div>
+      </div>
+
+      <div class="max-w-3xl space-y-space-md">
+        <h1 class="font-headline-xl text-headline-xl font-bold tracking-tight">
+          Buy and sell UAE businesses with <span class="text-primary">demand you can measure</span>
+        </h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant">
+          Browse listings across Dubai, Abu Dhabi and the northern emirates, and see where qualified investor interest is
+          actually moving, sector by sector.
+        </p>
+      </div>
+
+      <form id="filters" class="bg-surface-card rounded-2xl shadow-xl p-space-md">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-space-md items-end">
+          <div class="lg:col-span-3 space-y-1.5">
+            <label class="font-label-badge text-label-badge uppercase tracking-wider text-outline block">Sector</label>
+            <select id="f-sector" class="w-full px-3 py-2.5 bg-surface-container-low rounded-xl font-body-sm text-body-sm focus:outline-none"><option value="">All sectors</option></select>
+          </div>
+          <div class="lg:col-span-3 space-y-1.5">
+            <label class="font-label-badge text-label-badge uppercase tracking-wider text-outline block">Emirate</label>
+            <select id="f-emirate" class="w-full px-3 py-2.5 bg-surface-container-low rounded-xl font-body-sm text-body-sm focus:outline-none"><option value="">All emirates</option></select>
+          </div>
+          <div class="lg:col-span-3 space-y-1.5">
+            <label class="font-label-badge text-label-badge uppercase tracking-wider text-outline block">Asking price</label>
+            <select id="f-price" class="w-full px-3 py-2.5 bg-surface-container-low rounded-xl font-body-sm text-body-sm focus:outline-none">
+              <option value="">Any price (AED)</option>
+              <option value="0-1000000">Under AED 1M</option>
+              <option value="1000000-2000000">AED 1M – 2M</option>
+              <option value="2000000-5000000">AED 2M – 5M</option>
+              <option value="5000000-">Over AED 5M</option>
+            </select>
+          </div>
+          <div class="lg:col-span-2 space-y-1.5">
+            <label class="font-label-badge text-label-badge uppercase tracking-wider text-outline block">Min EBITDA</label>
+            <select id="f-ebitda" class="w-full px-3 py-2.5 bg-surface-container-low rounded-xl font-body-sm text-body-sm focus:outline-none">
+              <option value="">Any</option>
+              <option value="100000">AED 100K+</option>
+              <option value="250000">AED 250K+</option>
+              <option value="500000">AED 500K+</option>
+            </select>
+          </div>
+          <div class="lg:col-span-1">
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-semibold flex items-center justify-center shadow-sm transition-colors" title="Search">
+              <span class="material-symbols-outlined text-[20px]">search</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- LISTINGS -->
+  <section id="listings" class="py-space-xl">
+    <div class="max-w-[1360px] mx-auto px-gutter">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+        <div>
+          <span class="font-label-badge text-label-badge uppercase text-primary tracking-widest font-semibold">Deal flow</span>
+          <h2 class="font-headline-lg text-headline-lg font-bold mt-1">Businesses for sale</h2>
+          <p id="results-meta" class="font-body-md text-body-md text-on-surface-variant">Loading…</p>
+        </div>
+      </div>
+      <div id="deals-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg"></div>
+      <div id="listings-msg" class="hidden bg-surface-card rounded-2xl p-space-lg text-on-surface-variant text-center"></div>
+      <div class="flex justify-center mt-space-lg">
+        <button id="load-more" class="hidden px-6 py-3 rounded-xl bg-surface-card hover:bg-surface-container-low shadow-sm font-semibold transition-colors">Load more</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SENTIMENT -->
+  <section id="sentiment" class="bg-surface-card py-space-xl">
+    <div class="max-w-[1360px] mx-auto px-gutter space-y-space-lg">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+        <div>
+          <span class="font-label-badge text-label-badge uppercase text-primary tracking-widest font-semibold">Investor sentiment</span>
+          <h2 class="font-headline-lg text-headline-lg font-bold mt-1">Where qualified demand is going</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+            Demand counts unique investor–listing pairs with an enquiry, meeting or offer. Page views and saves are excluded.
+          </p>
+        </div>
+        <span id="sentiment-quarter" class="px-3 py-1.5 rounded-xl bg-accent-gold-bg text-accent-gold font-body-sm text-body-sm font-semibold"></span>
+      </div>
+      <div id="sentiment-msg" class="hidden bg-surface-container-low rounded-2xl p-space-md text-on-surface-variant"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+        <div class="lg:col-span-6 bg-surface-container-low rounded-2xl p-space-lg space-y-space-md">
+          <div>
+            <h3 class="font-headline-sm text-headline-sm font-semibold">Sector share of qualified demand</h3>
+            <span id="sector-n" class="font-label-badge text-label-badge text-outline uppercase tracking-wider"></span>
+          </div>
+          <div id="sector-bars" class="space-y-3"></div>
+        </div>
+        <div class="lg:col-span-6 bg-surface-container-low rounded-2xl p-space-lg space-y-space-md">
+          <div>
+            <h3 class="font-headline-sm text-headline-sm font-semibold">Investor countries</h3>
+            <span class="font-label-badge text-label-badge text-outline uppercase tracking-wider">Investors with qualified interest</span>
+          </div>
+          <div id="country-bars" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <div class="bg-surface-container-low rounded-2xl p-space-lg space-y-space-md">
+        <div>
+          <h3 class="font-headline-sm text-headline-sm font-semibold">Sector trend</h3>
+          <span id="trend-range" class="font-label-badge text-label-badge text-outline uppercase tracking-wider"></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left font-body-sm text-body-sm">
+            <thead>
+              <tr class="text-outline font-label-badge text-label-badge uppercase">
+                <th class="py-2 px-3">Sector</th><th class="py-2 px-3">Share then</th><th class="py-2 px-3">Share now</th>
+                <th class="py-2 px-3">Change</th><th class="py-2 px-3">Trend</th>
+              </tr>
+            </thead>
+            <tbody id="trend-body" class="divide-y divide-border-subtle"></tbody>
+          </table>
+        </div>
+        <p class="font-body-sm text-body-sm text-outline">
+          A sector is labelled increasing or decreasing only when the move is at least 1 point and statistically significant (p &lt; 0.05).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RISK REPORT (coming soon) -->
+  <section id="risk-report" class="py-space-xl">
+    <div class="max-w-[1360px] mx-auto px-gutter">
+      <div class="bg-surface-card rounded-2xl shadow-xl p-space-lg lg:p-space-xl grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-center">
+        <div class="lg:col-span-8 space-y-space-sm">
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-blue-subtle text-primary font-label-badge text-label-badge uppercase font-bold tracking-wider">
+            <span class="material-symbols-outlined text-[16px]">security</span> Coming soon
+          </span>
+          <h2 class="font-headline-lg text-headline-lg font-bold leading-tight">Digital legal risk reports</h2>
+          <p class="font-body-lg text-body-lg text-on-surface-variant">
+            Court filings, labour disputes, real-estate litigation, gazette notices and liquidation checks for a registered entity,
+            summarised before you sign a term sheet. This module is on the roadmap and is not yet connected.
+          </p>
+        </div>
+        <div class="lg:col-span-4 flex lg:justify-end">
+          <button disabled class="px-6 py-3 rounded-xl bg-surface-container text-outline font-semibold cursor-not-allowed">Not available yet</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="/js/layout.js"></script>
+<script src="/js/api.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const PAGE = 12;
+const state = { skip: 0, total: 0 };
+
+/* ---------- filters / facets ---------- */
+async function loadFacets() {
+  try {
+    const f = await BXB.get("/bxb/facets");
+    f.sectors.forEach((s) => $("f-sector").insertAdjacentHTML("beforeend", `<option value="${BXB.esc(s)}">${BXB.esc(s)}</option>`));
+    f.emirates.forEach((e) => $("f-emirate").insertAdjacentHTML("beforeend", `<option value="${BXB.esc(e)}">${BXB.esc(e)}</option>`));
+    $("hero-count").textContent = `${f.active_listings.toLocaleString()} active listings`;
+  } catch (e) {
+    $("hero-count").textContent = "API unavailable";
+  }
+}
+
+function currentParams() {
+  const [min, max] = ($("f-price").value || "-").split("-");
+  return {
+    sector: $("f-sector").value,
+    emirate: $("f-emirate").value,
+    min_price: min, max_price: max,
+    min_ebitda: $("f-ebitda").value,
+    skip: state.skip, limit: PAGE,
+  };
+}
+
+/* ---------- listings ---------- */
+function card(l) {
+  return `
+  <article class="bg-surface-card rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden">
+    <div class="p-space-md space-y-space-sm">
+      <div class="flex items-center justify-between">
+        <span class="font-label-badge text-label-badge uppercase text-outline">${BXB.esc(l.sector)}</span>
+        <span class="px-2 py-0.5 rounded bg-accent-blue-subtle text-primary font-label-badge text-label-badge uppercase font-semibold">${BXB.esc(l.emirate)}</span>
+      </div>
+      <h3 class="font-headline-sm text-headline-sm font-semibold">${BXB.esc(l.sector)} business · ${BXB.esc(l.emirate)}</h3>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        ${l.years_operating} years operating · ${l.ownership_pct}% ownership for sale · ${l.anonymous ? "anonymous seller" : "named seller"}
+      </p>
+      <div class="grid grid-cols-2 gap-space-sm p-space-sm bg-surface-container-low rounded-xl">
+        <div><span class="font-label-badge text-label-badge text-outline uppercase block">Asking price</span>
+          <span class="font-label-numeric text-label-numeric text-primary font-bold">${BXB.aed(l.asking_price)}</span></div>
+        <div><span class="font-label-badge text-label-badge text-outline uppercase block">Annual revenue</span>
+          <span class="font-label-numeric text-label-numeric font-semibold">${BXB.aed(l.annual_revenue)}</span></div>
+        <div><span class="font-label-badge text-label-badge text-outline uppercase block">EBITDA</span>
+          <span class="font-label-numeric text-label-numeric font-semibold">${BXB.aed(l.ebitda)}</span></div>
+        <div><span class="font-label-badge text-label-badge text-outline uppercase block">Price / EBITDA</span>
+          <span class="font-label-numeric text-label-numeric font-semibold">${BXB.multiple(l.asking_price, l.ebitda)}</span></div>
+      </div>
+    </div>
+    <div class="px-space-md pb-space-md">
+      <a href="/deal.html?id=${l.id}" class="block text-center py-2.5 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-semibold transition-colors">View deal</a>
+    </div>
+  </article>`;
+}
+
+async function loadListings(reset) {
+  if (reset) { state.skip = 0; $("deals-grid").innerHTML = ""; }
+  $("listings-msg").classList.add("hidden");
+  try {
+    const r = await BXB.get("/bxb/listings", currentParams());
+    state.total = r.count;
+    $("deals-grid").insertAdjacentHTML("beforeend", r.data.map(card).join(""));
+    state.skip += r.data.length;
+    $("results-meta").textContent = `${r.count.toLocaleString()} matching listings · showing ${state.skip.toLocaleString()}`;
+    $("load-more").classList.toggle("hidden", state.skip >= r.count);
+    if (!r.count) { $("listings-msg").textContent = "No listings match these filters."; $("listings-msg").classList.remove("hidden"); }
+  } catch (e) {
+    $("results-meta").textContent = "";
+    $("listings-msg").textContent = `Could not load listings (${e.message}). Is the API running and the database seeded?`;
+    $("listings-msg").classList.remove("hidden");
+  }
+}
+
+$("filters").addEventListener("submit", (ev) => { ev.preventDefault(); loadListings(true); });
+$("load-more").addEventListener("click", () => loadListings(false));
+
+/* ---------- sentiment ---------- */
+function bar(label, valueText, pct, extra = "") {
+  return `<div>
+    <div class="flex justify-between font-body-sm text-body-sm mb-1">
+      <span class="font-semibold">${BXB.esc(label)}</span>
+      <span class="font-label-numeric text-label-sm text-primary font-bold">${valueText}</span>
+    </div>
+    <div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden"><div class="h-full bg-primary rounded-full" style="width:${Math.min(100, pct)}%"></div></div>
+    ${extra}
+  </div>`;
+}
+
+async function loadSentiment() {
+  $("sentiment-quarter").textContent = `Quarter ${BXB.QUARTER}`;
+  $("trend-range").textContent = `${BXB.TREND_FROM} → ${BXB.TREND_TO}`;
+  try {
+    const [sec, cty, trend] = await Promise.all([
+      BXB.get("/bxb/sentiment/sectors", { quarter: BXB.QUARTER }),
+      BXB.get("/bxb/sentiment/countries", { quarter: BXB.QUARTER }),
+      BXB.get("/bxb/sentiment/trend", { q_from: BXB.TREND_FROM, q_to: BXB.TREND_TO }),
+    ]);
+    $("sector-n").textContent = `${sec.n} demand units${sec.low_confidence ? " · low confidence" : ""}`;
+    $("sector-bars").innerHTML = Object.entries(sec.sectors)
+      .sort((a, b) => b[1].share_pct - a[1].share_pct)
+      .map(([s, v]) => bar(s, v.share_pct + "%", v.share_pct * 3,
+        `<span class="font-label-badge text-label-badge text-outline">95% CI ${v.ci95_pct[0]}–${v.ci95_pct[1]}% · ${v.units} units</span>`))
+      .join("") || "<p class='text-outline'>No qualified demand in this quarter.</p>";
+    $("country-bars").innerHTML = cty.map((c) => bar(c.country, c.share_pct + "%", c.share_pct * 3,
+      `<span class="font-label-badge text-label-badge text-outline">${c.investors} investors</span>`)).join("")
+      || "<p class='text-outline'>No data.</p>";
+    const badge = (t) => ({
+      increasing: "bg-badge-emerald-bg text-badge-emerald-text",
+      decreasing: "bg-red-50 text-danger-rose",
+      stable: "bg-surface-container text-on-surface-variant",
+    }[t]);
+    $("trend-body").innerHTML = trend.map((r) => `
+      <tr>
+        <td class="py-3 px-3 font-semibold">${BXB.esc(r.sector)}</td>
+        <td class="py-3 px-3 font-label-numeric">${r.share_from_pct}%</td>
+        <td class="py-3 px-3 font-label-numeric">${r.share_to_pct}%</td>
+        <td class="py-3 px-3 font-label-numeric">${r.change_pts > 0 ? "+" : ""}${r.change_pts} pts</td>
+        <td class="py-3 px-3"><span class="px-2 py-0.5 rounded font-label-badge text-label-badge uppercase font-bold ${badge(r.trend)}">${r.trend}</span></td>
+      </tr>`).join("");
+  } catch (e) {
+    $("sentiment-msg").textContent = `Could not load sentiment data (${e.message}).`;
+    $("sentiment-msg").classList.remove("hidden");
+  }
+}
+
+loadFacets();
+loadListings(true);
+loadSentiment();
+</script>
+</body>
+</html>
