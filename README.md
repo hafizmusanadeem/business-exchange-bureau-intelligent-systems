@@ -1,20 +1,31 @@
-# BXB Pulse – Module 1 (foundation layer)
+# BXB Pulse – Module 1: Foundation (MVP)
 
-Drop-in layer for `fastapi/full-stack-fastapi-template` (MIT). The template supplies auth, users,
-Docker, CI, migrations and the React frontend; this layer adds the BXB domain.
+Clean, template-ready implementation of Step 1 of the BXB Pulse development plan.
 
-## Install
-    git clone https://github.com/fastapi/full-stack-fastapi-template bxb-pulse && cd bxb-pulse
-    cp -r <this>/backend/app/bxb backend/app/bxb
-    cp backend/app/bxb/routes.py backend/app/api/routes/bxb.py
-    # backend/app/api/main.py: add `from app.api.routes import bxb` and `api_router.include_router(bxb.router)`
-    # backend/app/models.py: add `from app.bxb.models import *  # noqa` so Alembic sees the tables
-    cd backend && alembic revision --autogenerate -m "bxb tables" && alembic upgrade head
-    python -m app.bxb.seed
+## What is included
 
-## Notes
-- Check that `app.api.deps` exports `SessionDep` and `CurrentUser` and that `app.core.db.engine` exists; the
-  template has changed over time, so adjust import names if needed.
-- Roles: BXB admin = template superuser; sellers and investors are normal users with a `Profile.role`.
-- Only enquiry, meeting and offer events count as qualified demand. Views and saves are stored but excluded.
-- All generated data is synthetic with planted trends (Healthcare demand up, Retail down, IT oversupplied).
+- **Roles** – seller / investor / admin (`Profile` table linked to the template `User`)
+- **Schema** – `Listing`, `InvestorProfile`, `InvestorEvent` (richer than a simple Enquiry)
+- **Qualified interest** – `EventKind` + `QUALIFIED` set (views are never counted as demand)
+- **Synthetic generator** – 36 months of history with planted demand/supply signals
+- **Seed script** – loads the synthetic data + three demo users with known passwords
+- **API routes** – list / create listings, change status, upsert investor profile, record events
+- **Alembic migration stub** – ready to be chained onto the template’s current head
+- **Unit tests** – pure stdlib tests for the generator (determinism, integrity, planted trends)
+
+## Quick start
+
+See [`docs/MODULE1_INTEGRATION.md`](docs/MODULE1_INTEGRATION.md) for the exact copy-paste steps into the official FastAPI full-stack template.
+
+## Design decisions (aligned with the plan)
+
+| Decision | Rationale |
+|----------|-----------|
+| `InvestorEvent` instead of a single `Enquiry` table | Supports the full sentiment definition (save / enquiry / meeting / offer) while still excluding page views |
+| Explicit primary keys in the seed | Keeps synthetic IDs stable so later modules can refer to the same records |
+| Demo users with fixed emails | Lets you exercise the authenticated endpoints immediately without a UI |
+| No production hardening | MVP priority is speed; Docker / CI / rate-limiting stay with the template |
+
+## Next modules
+
+Once this is integrated you can start Module 2 (Investor Sentiment metrics) against the same tables and synthetic events.

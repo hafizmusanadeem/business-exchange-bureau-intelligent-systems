@@ -1,8 +1,15 @@
-"""BXB tables. Same SQLModel style as the template's models.py; import this module in
-app/models.py (or alembic env) so Alembic autogenerate sees the tables."""
+"""BXB tables. Import this module from app/models.py (or alembic env) so Alembic
+autogenerate sees the tables.
+
+Replaces the template's sample Item model with Listing, InvestorProfile and
+InvestorEvent (the richer event stream used by Investor Sentiment).
+"""
+from __future__ import annotations
+
 import uuid
 from datetime import date
 from enum import Enum
+
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
@@ -28,11 +35,15 @@ class EventKind(str, Enum):
     meeting = "meeting"    # qualified
     offer = "offer"        # qualified
 
+
 QUALIFIED = {EventKind.enquiry, EventKind.meeting, EventKind.offer}
 
 
 class Profile(SQLModel, table=True):
-    user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True, ondelete="CASCADE")
+    """Links a template User to a BXB role. One row per user."""
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", primary_key=True, ondelete="CASCADE"
+    )
     role: Role = Role.investor
 
 
