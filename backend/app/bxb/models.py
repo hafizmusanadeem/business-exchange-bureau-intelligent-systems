@@ -39,8 +39,22 @@ class EventKind(str, Enum):
 QUALIFIED = {EventKind.enquiry, EventKind.meeting, EventKind.offer}
 
 
+class User(SQLModel, table=True):
+    """Minimal account row so the foreign keys below resolve in this standalone repo.
+
+    Same columns as the full-stack-fastapi-template User, so it stays compatible if you
+    later move to the template. There is no login route yet: see app/api/deps.py.
+    """
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    email: str = Field(unique=True, index=True, max_length=255)
+    hashed_password: str
+    full_name: str | None = Field(default=None, max_length=255)
+    is_active: bool = True
+    is_superuser: bool = False
+
+
 class Profile(SQLModel, table=True):
-    """Links a template User to a BXB role. One row per user."""
+    """Links a User to a BXB role. One row per user."""
     user_id: uuid.UUID = Field(
         foreign_key="user.id", primary_key=True, ondelete="CASCADE"
     )

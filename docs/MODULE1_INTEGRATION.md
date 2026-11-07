@@ -1,99 +1,57 @@
-# BXB Pulse – Modules 1–6 Integration Guide
+# Running BXB Pulse from a clean checkout
 
-Drop-in layer for the official
-[full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template).
+This repo is standalone: FastAPI + SQLModel + PostgreSQL, and a static frontend in `frontend/`
+that FastAPI serves. It does not need the full-stack-fastapi-template.
 
-## Files
-
-```
-backend/app/bxb/
-  models.py, synthetic.py, seed.py
-  sentiment.py
-  trends.py, forecast.py
-  matching.py, metrics.py, eval_matching.py
-  finance_extract.py, finance_validate.py, valuation.py, finance_synth.py
-  report_facts.py, grounding.py, report_writer.py, eval_grounding.py
-
-backend/app/api/routes/
-  bxb.py, bxb_sentiment.py, bxb_trends.py, bxb_matching.py,
-  bxb_financials.py, bxb_reports.py
-
-backend/app/alembic/versions/
-  2026_11_06_0001_bxb_foundation.py   # includes FinancialFact
-
-tests/
-  test_synthetic.py, test_sentiment.py, test_trends.py,
-  test_matching.py, test_finance.py, test_grounding.py
-```
-
-## Integration steps
-
-1. Copy into the template:
-   ```bash
-   cp -r backend/app/bxb               <template>/backend/app/
-   cp    backend/app/api/routes/bxb*.py <template>/backend/app/api/routes/
-   cp    backend/app/alembic/versions/2026_11_06_0001_bxb_foundation.py \
-         <template>/backend/app/alembic/versions/
-   ```
-
-2. Register models (bottom of `app/models.py`):
-   ```python
-   from app.bxb.models import *  # noqa: F401,F403
-   ```
-
-3. Register routers (`app/api/main.py`):
-   ```python
-   from app.api.routes import (
-       bxb, bxb_sentiment, bxb_trends, bxb_matching, bxb_financials, bxb_reports
-   )
-   for r in (bxb, bxb_sentiment, bxb_trends, bxb_matching, bxb_financials, bxb_reports):
-       api_router.include_router(r.router)
-   ```
-
-4. Dependencies in `backend/pyproject.toml`:
-   ```
-   scikit-learn
-   numpy
-   joblib
-   pdfplumber
-   ```
-
-5. Migration + seed:
-   ```bash
-   cd backend
-   # set down_revision in the migration to the current alembic head
-   alembic upgrade head
-   python -m app.bxb.seed
-   ```
-
-## Demo credentials (password = `demopass123`)
-
-| Email              | Role     |
-|--------------------|----------|
-| seller@bxb.demo    | seller   |
-| investor@bxb.demo  | investor |
-| admin@bxb.demo     | admin    |
-
-## Key endpoints (Modules 5–6)
-
-| Endpoint | Auth | Purpose |
-|----------|------|---------|
-| `POST /bxb/financials/listings/{id}/upload` | Owner / admin | Upload financial PDF (10 MB max) |
-| `GET /bxb/financials/listings/{id}/summary` | Owner / admin | Facts, validation flags, valuation range |
-| `GET /bxb/reports/market?q_from=&q_to=` | Authenticated | Grounded market report (template or LLM) |
-
-## Offline evaluation
+## 1. Install
 
 ```bash
-PYTHONPATH=backend python -m app.bxb.eval_matching
-PYTHONPATH=backend python -m app.bxb.finance_synth
-PYTHONPATH=backend python -m app.bxb.eval_grounding
+uv sync            # or: pip install -e .   (Python 3.13)
 ```
 
-## Unit tests
+## 2. Database
+
+Create an empty PostgreSQL database, then put its URL in `backend/.env`:
+
+```
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/bxb
+```
+
+```bash
+cd backend
+alembic upgrade head        # creates user, profile, listing, investorprofile, investorevent, financialfact
+python -m app.bxb.seed      # safe to re-run; local only (ENVIRONMENT must be "local", the default)
+```
+
+The seed loads 36 months of SYNTHETIC listings, 500 investors and about 20,000 events, plus:
+
+- demo users (password `demopass123`) `seller@bxb.demo`, `investor@bxb.demo`, `admin@bxb.demo`;
+- `dev@bxb.local`, the user that `app/api/deps.py` hands to every request. Its row must exist,
+  or "Register interest" in the deal room fails on a foreign key;
+- five INVENTED draft listings with deliberately implausible numbers. Drafts never appear in the
+  marketplace, sentiment or reports, but the AI Lab "Screen database listings" queue flags them.
+
+There is no login yet: `deps.py` treats every request as the dev superuser. Replace it before
+anything is deployed.
+
+If your database was created some other way (for example `SQLModel.metadata.create_all`), do not
+run `alembic upgrade head` on it. Run `alembic stamp head` instead, then the seed.
+
+## 3. Run
+
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
+
+Open <http://localhost:8000/> (marketplace), `/valuation.html` and `/ai-lab.html`.
+Valuation drafts are kept in memory, so restarting the server clears them.
+
+## 4. Tests and evaluations
 
 ```bash
 PYTHONPATH=backend python -m pytest tests/ -q
+PYTHONPATH=backend python -m app.bxb.scoreboard     # rewrites backend/scoreboard.json
 ```
 
-Expect ~55 tests when pdfplumber is installed.
+The tests need no database. Fonts and Tailwind load from CDNs, so the pages need internet.
