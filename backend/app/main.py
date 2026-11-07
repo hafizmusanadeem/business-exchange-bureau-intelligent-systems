@@ -3,7 +3,16 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import bxb, bxb_public, bxb_sentiment
+from app.api.routes import (
+    bxb,
+    bxb_ai,
+    bxb_financials,
+    bxb_matching,
+    bxb_public,
+    bxb_reports,
+    bxb_sentiment,
+    bxb_trends,
+)
 
 app = FastAPI(title="BXB Pulse")
 
@@ -11,6 +20,11 @@ app = FastAPI(title="BXB Pulse")
 app.include_router(bxb.router)
 app.include_router(bxb_public.router)
 app.include_router(bxb_sentiment.router)
+app.include_router(bxb_trends.router)
+app.include_router(bxb_matching.router)
+app.include_router(bxb_financials.router)
+app.include_router(bxb_reports.router)
+app.include_router(bxb_ai.router)
 
 
 @app.get("/health")

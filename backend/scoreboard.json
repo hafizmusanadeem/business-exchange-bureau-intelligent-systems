@@ -1,0 +1,152 @@
+{
+  "generated_at": "2026-11-07T06:29:59+00:00",
+  "synthetic": true,
+  "disclaimer": "All figures are measured on synthetic data. They show the pipeline works, not how it performs on BXB data.",
+  "sections": {
+    "extraction_and_validation": {
+      "ok": true,
+      "seconds": 12.38,
+      "result": {
+        "A": {
+          "field_accuracy": 1.0,
+          "fields": 132
+        },
+        "B": {
+          "field_accuracy": 1.0,
+          "fields": 132
+        },
+        "C": {
+          "field_accuracy": 1.0,
+          "fields": 132
+        },
+        "overall_field_accuracy": 1.0,
+        "no_ruled_lines_field_accuracy": {
+          "field_accuracy": 1.0,
+          "fields": 360
+        },
+        "validator": {
+          "cases_per_error": 12,
+          "detection_rate": {
+            "GROSS_PROFIT_MISMATCH": 1.0,
+            "REVENUE_BANK_GAP": 1.0,
+            "BALANCE_SHEET_MISMATCH": 1.0,
+            "EXPENSE_JUMP": 1.0
+          },
+          "clean_docs_with_false_alarm": "0/12"
+        },
+        "note": "Synthetic, cleanly ruled tables. Real scanned or irregular statements will score lower; measure on real documents."
+      }
+    },
+    "grounded_reports": {
+      "ok": true,
+      "seconds": 21.05,
+      "result": {
+        "false_alarms_on_clean_sentences": "0/13",
+        "detection_rate": {
+          "number_swap": "12/12 = 100%",
+          "direction_flip": "2/2 = 100%",
+          "causal_claim": "12/12 = 100%",
+          "uncited_number": "12/12 = 100%",
+          "wrong_sector": "5/5 = 100%",
+          "fabricated_stat": "12/12 = 100%"
+        },
+        "retry_and_fallback": {
+          "careless_llm": {
+            "final_report_verified": true,
+            "attempts": 3,
+            "template_fallback_sentences": 0,
+            "writer": "llm"
+          },
+          "very_bad_llm": {
+            "final_report_verified": true,
+            "attempts": 3,
+            "template_fallback_sentences": 6,
+            "writer": "llm+template_fallback"
+          },
+          "always_hallucinates": {
+            "final_report_verified": true,
+            "attempts": 3,
+            "template_fallback_sentences": 6,
+            "writer": "llm+template_fallback"
+          }
+        },
+        "note": "Mutations are mechanical. The verifier checks numbers, sector names, direction words, causal wording and citations. It cannot judge whether a true statement is well chosen."
+      }
+    },
+    "investor_matching": {
+      "ok": true,
+      "seconds": 21.17,
+      "result": {
+        "note": "SYNTHETIC ground truth; not BXB performance",
+        "train_listings": 489,
+        "test_listings_scored": 210,
+        "avg_candidates_per_listing": 40.2,
+        "metrics": {
+          "random": {
+            "precision@3": 0.483,
+            "recall@10": 0.318,
+            "ndcg@10": 0.437
+          },
+          "rules": {
+            "precision@3": 0.738,
+            "recall@10": 0.452,
+            "ndcg@10": 0.682
+          },
+          "learned": {
+            "precision@3": 0.925,
+            "recall@10": 0.551,
+            "ndcg@10": 0.877
+          }
+        },
+        "ndcg@10_learned_minus_rules": {
+          "mean": 0.195,
+          "ci95": [
+            0.171,
+            0.214
+          ]
+        }
+      }
+    },
+    "listing_screening": {
+      "ok": true,
+      "seconds": 0.87,
+      "result": {
+        "listings_screened": 2459,
+        "false_alarms_on_clean_synthetic": "0/2459",
+        "detection_rate": {
+          "ebitda_exceeds_revenue": "60/60 = 100%",
+          "price_far_below_earnings": "60/60 = 100%",
+          "return_promise_text": "60/60 = 100%",
+          "contact_leak_text": "60/60 = 100%",
+          "tiny_price_for_headcount": "60/60 = 100%",
+          "duplicate_image": "60/60 = 100%"
+        },
+        "note": "Planted problems are mechanical. Tune thresholds on real moderation decisions."
+      }
+    },
+    "valuation_drafts": {
+      "ok": true,
+      "seconds": 1.04,
+      "result": {
+        "documents_per_kind": 4,
+        "clean_docs_with_false_alarm": "0/4",
+        "planted_problems_flagged_high": "4/4",
+        "narratives_passing_verifier": "8/8",
+        "mean_estimated_hours_saved": 8.2,
+        "note": "Synthetic, cleanly ruled tables. Hours saved use placeholder assumptions, not a BXB time study."
+      }
+    },
+    "verifier_attacks": {
+      "ok": true,
+      "seconds": 0.0,
+      "result": {
+        "attacks": 10,
+        "caught": 10,
+        "reason_matches": 10,
+        "clean_sentences": 4,
+        "clean_passed": 4,
+        "note": "Synthetic facts. The verifier checks numbers, entities, direction, causal wording and citations; it cannot judge whether a true statement is well chosen."
+      }
+    }
+  }
+}
