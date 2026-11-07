@@ -20,6 +20,8 @@
         ${link("/", "Marketplace", path === "/" || path.endsWith("index.html"))}
         ${link("/#sentiment", "Market Sentiment", false)}
         ${link("/#risk-report", "Legal Risk Reports", false)}
+        ${link("/valuation.html", "AI Valuation", path.endsWith("valuation.html"))}
+        ${link("/ai-lab.html", "AI Lab", path.endsWith("ai-lab.html"))}
       </nav>
       <div class="flex items-center gap-space-sm">
         <span class="hidden sm:inline-flex px-2.5 py-1 rounded bg-accent-gold-bg text-accent-gold font-label-badge text-label-badge uppercase font-bold">Demo · synthetic data</span>

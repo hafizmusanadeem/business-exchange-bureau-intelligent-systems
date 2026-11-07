@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI valuation draft | BXB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/tailwind-config.js"></script>
+<style>body{margin:0}</style>
+</head>
+<body class="bg-surface-canvas text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<div id="site-header"></div>
+
+<main class="w-full pt-20 flex-1">
+  <section class="bg-surface-card">
+    <div class="max-w-[1360px] mx-auto px-gutter py-space-xl space-y-space-md">
+      <h1 class="font-headline-lg text-headline-lg font-bold tracking-tight">Draft a valuation report in minutes</h1>
+      <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl">
+        Upload financial statements as a PDF. The draft extracts every figure with its source page, checks the arithmetic, builds
+        the valuation scenarios and writes a verified summary. An analyst reviews and approves it before anyone relies on it.
+      </p>
+      <div class="bg-surface-container-low rounded-2xl p-space-md grid grid-cols-1 md:grid-cols-12 gap-space-md items-end">
+        <label class="md:col-span-4 block"><span class="font-label-sm text-label-sm text-outline block mb-1">Financial statements (PDF, max 10 MB)</span>
+          <input id="file" type="file" accept="application/pdf" class="w-full px-3 py-2 rounded-xl bg-surface-card text-body-sm"/></label>
+        <label class="md:col-span-3 block"><span class="font-label-sm text-label-sm text-outline block mb-1">Sector</span>
+          <select id="sector" class="w-full px-3 py-2.5 rounded-xl bg-surface-card text-body-sm">
+            <option>Food &amp; Beverage</option><option>Healthcare</option><option>Beauty</option><option>Information Technology</option>
+            <option>Commercial Services</option><option>Retail</option><option>Logistics</option></select></label>
+        <label class="md:col-span-2 block"><span class="font-label-sm text-label-sm text-outline block mb-1">Asking price (AED, optional)</span>
+          <input id="asking" type="number" min="0" step="50000" class="w-full px-3 py-2.5 rounded-xl bg-surface-card text-body-sm"/></label>
+        <div class="md:col-span-3 flex flex-wrap gap-2">
+          <button id="go" class="px-4 py-2.5 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-semibold">Draft from PDF</button>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 text-body-sm">
+        <span class="text-on-surface-variant">No file to hand? Try a synthetic statement:</span>
+        <button id="s-clean" class="px-3 py-1.5 rounded-lg bg-badge-emerald-bg text-badge-emerald-text font-semibold">Clean statements</button>
+        <button id="s-fraud" class="px-3 py-1.5 rounded-lg bg-accent-gold-bg text-accent-gold font-semibold">Statements with planted problems</button>
+        <span id="busy" class="text-outline"></span>
+      </div>
+      <p id="err" class="hidden text-danger-rose font-body-sm text-body-sm"></p>
+    </div>
+  </section>
+
+  <div id="result" class="hidden max-w-[1360px] mx-auto px-gutter py-space-xl space-y-space-lg">
+    <div id="strip" class="bg-surface-card rounded-2xl shadow-sm p-space-md flex flex-col lg:flex-row lg:items-center justify-between gap-space-md"></div>
+    <div id="kpis" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+      <div class="lg:col-span-7 bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-3">
+        <h2 class="font-headline-sm text-headline-sm font-semibold">Summary for the analyst to check</h2>
+        <p class="font-body-sm text-body-sm text-outline">Each sentence is machine-checked against the computed figures. A tick means every number, sector name and direction word matched.</p>
+        <ul id="narrative" class="space-y-2"></ul>
+      </div>
+      <div class="lg:col-span-5 space-y-space-lg">
+        <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-3">
+          <h2 class="font-headline-sm text-headline-sm font-semibold">Data flags</h2>
+          <ul id="flags" class="space-y-2"></ul>
+        </div>
+        <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-3">
+          <h2 class="font-headline-sm text-headline-sm font-semibold">Analyst review</h2>
+          <ul id="checklist" class="list-disc pl-5 text-body-sm text-on-surface-variant space-y-1"></ul>
+          <div id="review-form" class="space-y-2">
+            <input id="reviewer" maxlength="80" placeholder="Reviewer name" class="w-full px-3 py-2 rounded-xl bg-surface-container-low text-body-sm"/>
+            <textarea id="note" maxlength="1000" rows="2" placeholder="Note (required to approve a draft with high-severity flags)" class="w-full px-3 py-2 rounded-xl bg-surface-container-low text-body-sm"></textarea>
+            <div class="flex gap-2">
+              <button id="approve" class="px-4 py-2 rounded-xl bg-badge-emerald-text text-on-primary font-semibold">Approve draft</button>
+              <button id="reject" class="px-4 py-2 rounded-xl bg-surface-container font-semibold">Reject draft</button>
+              <a id="pdf" target="_blank" rel="noopener" class="ml-auto px-4 py-2 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-semibold">Download PDF</a>
+            </div>
+          </div>
+          <p id="review-msg" class="font-body-sm text-body-sm"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-3">
+      <h2 class="font-headline-sm text-headline-sm font-semibold">Where each figure came from</h2>
+      <div class="overflow-x-auto"><table class="w-full text-left font-body-sm text-body-sm">
+        <thead><tr class="text-outline font-label-sm text-label-sm"><th class="py-2 px-3">Metric</th><th class="py-2 px-3">Period</th><th class="py-2 px-3">Value</th><th class="py-2 px-3">Source cell</th><th class="py-2 px-3">File, page</th><th class="py-2 px-3">Confidence</th></tr></thead>
+        <tbody id="facts" class="divide-y divide-border-subtle"></tbody></table></div>
+      <p id="facts-note" class="font-body-sm text-body-sm text-outline"></p>
+    </div>
+    <p class="font-body-sm text-body-sm text-outline">
+      Preliminary, machine-assisted estimate, not a professional valuation. Multiples and discount rates are placeholders, not transaction evidence.
+      Asking prices are not sale prices. Review hours are assumptions, to be replaced by a measured analyst time study. All data in this demo is synthetic.
+    </p>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="/js/layout.js"></script>
+<script src="/js/api.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let draft = null;
+
+function chip(text, cls) { return `<span class="px-2.5 py-1 rounded font-label-badge text-label-badge font-bold ${cls}">${BXB.esc(text)}</span>`; }
+function kpi(label, value, note = "", cls = "text-on-surface") {
+  return `<div class="bg-surface-card p-5 rounded-xl shadow-sm"><span class="font-label-sm text-label-sm text-outline block">${label}</span>
+    <div class="font-label-numeric text-[22px] font-bold tracking-tight mt-1 ${cls}">${value}</div>
+    <span class="font-label-sm text-label-sm text-outline block mt-1">${note}</span></div>`;
+}
+const sevCls = { high: "bg-red-50 text-danger-rose", medium: "bg-accent-gold-bg text-accent-gold", low: "bg-surface-container text-on-surface-variant", info: "bg-accent-blue-subtle text-primary" };
+
+function render(d) {
+  draft = d; const v = d.valuation, r = d.review, ok = d.report.verification.ok;
+  const stCls = { pending_review: "bg-accent-gold-bg text-accent-gold", approved: "bg-badge-emerald-bg text-badge-emerald-text", rejected: "bg-red-50 text-danger-rose" }[d.status];
+  $("strip").innerHTML = `<div class="space-y-1">
+      <div class="flex flex-wrap items-center gap-2">${chip(d.status.replace("_", " "), stCls)}
+        ${d.sample ? chip("Synthetic sample: " + d.sample, "bg-accent-blue-subtle text-primary") : ""}
+        ${chip(r.tier + " review", "bg-surface-container text-on-surface-variant")}${r.escalate ? chip("Escalate: high-severity flags", "bg-red-50 text-danger-rose") : ""}</div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">${d.decision ? `Reviewed by ${BXB.esc(d.decision.reviewer)}: ${BXB.esc(d.decision.decision)}.` : "Waiting for an analyst. Nothing here has been approved."}</p></div>
+    <div class="text-right"><div class="font-label-numeric text-[22px] font-bold text-primary">${r.estimated_manual_hours}h by hand → about ${r.estimated_review_hours}h to review</div>
+      <span class="font-label-sm text-label-sm text-outline">Assumption, not a measurement. About ${r.estimated_hours_saved}h of analyst time saved on this report.</span></div>`;
+  const range = v.status === "ok" ? `${BXB.aed(v.range_ev[0])} to ${BXB.aed(v.range_ev[1])}` : "Not meaningful";
+  $("kpis").innerHTML =
+    kpi("Latest EBITDA", d.ebitda ? BXB.aed(Math.round(d.ebitda.value)) : "n/a", d.ebitda ? `${BXB.esc(d.latest_period)}, ${BXB.esc(d.ebitda.method)}` : "EBITDA missing", "text-primary") +
+    kpi("Enterprise value range", range, v.status === "ok" ? "Placeholder multiples, three scenarios" : BXB.esc(v.message || "")) +
+    kpi("Asking price vs range", v.asking_vs_range ? BXB.esc(v.asking_vs_range.position) : "n/a", v.asking_vs_range ? `${v.asking_vs_range.asking_to_base_pct}% of base case` : "No asking price given") +
+    kpi("Data quality", `${d.data_quality_score} / 100`, v.status === "ok" ? `Confidence: ${BXB.esc(v.confidence)}` : "", d.data_quality_score >= 90 ? "text-badge-emerald-text" : "text-danger-rose");
+  $("narrative").innerHTML = d.report.verification.sentences.map((s) =>
+    `<li class="flex gap-2"><span class="${s.ok ? "text-badge-emerald-text" : "text-danger-rose"} font-bold">${s.ok ? "✓" : "✗"}</span><span>${BXB.esc(s.text)}${s.ok ? "" : `<br><span class="text-danger-rose text-body-sm">${BXB.esc(s.violations.join("; "))}</span>`}</span></li>`).join("");
+  $("flags").innerHTML = d.flags.length ? d.flags.map((f) =>
+    `<li class="p-3 rounded-xl bg-surface-container-low"><div class="flex items-center gap-2 mb-1">${chip(f.severity, sevCls[f.severity])}<span class="font-label-sm text-label-sm text-outline">${BXB.esc(f.code)}</span></div>
+     <span class="font-body-sm text-body-sm">${BXB.esc(f.message)}</span></li>`).join("") : `<li class="text-body-sm text-on-surface-variant">No flags raised.</li>`;
+  $("checklist").innerHTML = r.checklist.map((c) => `<li>${BXB.esc(c)}</li>`).join("");
+  $("pdf").href = `/bxb/ai/valuation/${d.id}/pdf`;
+  const done = d.status !== "pending_review";
+  $("approve").disabled = $("reject").disabled = done || !ok;
+  [$("approve"), $("reject")].forEach((b) => b.classList.toggle("opacity-50", b.disabled));
+  $("review-msg").textContent = !ok ? "The summary failed verification, so this draft cannot be approved." : done ? "Decision recorded." : "";
+  const f = d.extraction.facts.slice(0, 15);
+  $("facts").innerHTML = f.map((x) => `<tr><td class="py-2 px-3 font-semibold">${BXB.esc(x.metric)}</td><td class="py-2 px-3">${BXB.esc(x.period)}</td>
+     <td class="py-2 px-3 font-label-numeric">${Math.round(x.value).toLocaleString("en-US")}</td><td class="py-2 px-3 text-outline">${BXB.esc(x.raw)}</td>
+     <td class="py-2 px-3 text-outline">${BXB.esc(x.file)}, p.${x.page}</td><td class="py-2 px-3">${Number(x.confidence).toFixed(2)}</td></tr>`).join("");
+  $("facts-note").textContent = `Showing ${f.length} of ${d.extraction.facts.length} extracted figures.` + (d.extraction.unmapped.length ? ` ${d.extraction.unmapped.length} unrecognised row label(s) were left out, not guessed.` : "");
+  $("result").classList.remove("hidden"); $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function fail(e) { $("err").textContent = e.message; $("err").classList.remove("hidden"); }
+async function run(fn) {
+  $("err").classList.add("hidden"); $("busy").textContent = "Working…";
+  try { render(await fn()); } catch (e) { fail(e); } finally { $("busy").textContent = ""; }
+}
+$("go").addEventListener("click", () => {
+  const file = $("file").files[0];
+  if (!file) return fail(new Error("Choose a PDF first, or try a synthetic statement."));
+  run(() => BXB.upload("/bxb/ai/valuation/draft", { sector: $("sector").value, asking_price: $("asking").value }, file));
+});
+$("s-clean").addEventListener("click", () => run(() => BXB.post("/bxb/ai/valuation/sample", { kind: "clean" })));
+$("s-fraud").addEventListener("click", () => run(() => BXB.post("/bxb/ai/valuation/sample", { kind: "fraud" })));
+
+async function decide(decision) {
+  const reviewer = $("reviewer").value.trim();
+  if (!reviewer) { $("review-msg").textContent = "Enter your name to record a decision."; return; }
+  try { render(await BXB.post(`/bxb/ai/valuation/${draft.id}/review`, {}, { decision, reviewer, note: $("note").value })); }
+  catch (e) { $("review-msg").textContent = e.message; }
+}
+$("approve").addEventListener("click", () => decide("approve"));
+$("reject").addEventListener("click", () => decide("reject"));
+</script>
+</body>
+</html>

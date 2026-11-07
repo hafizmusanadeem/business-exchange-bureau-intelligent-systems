@@ -13,8 +13,8 @@ const BXB = {
     const url = qs.toString() ? `${path}?${qs}` : path;
     const res = await fetch(url, {
       method,
-      headers: body ? { "Content-Type": "application/json" } : {},
-      body: body ? JSON.stringify(body) : undefined,
+      headers: body && !(body instanceof FormData) ? { "Content-Type": "application/json" } : {},
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
       let detail = res.statusText;
@@ -27,6 +27,7 @@ const BXB = {
   },
   get(path, params) { return this.request("GET", path, params); },
   post(path, params, body) { return this.request("POST", path, params, body); },
+  upload(path, params, file) { const fd = new FormData(); fd.append("file", file); return this.request("POST", path, params, fd); },
 
   // Formatting helpers
   aed(n) { return "AED " + Number(n).toLocaleString("en-US"); },

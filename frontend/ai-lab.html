@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Lab | BXB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/tailwind-config.js"></script>
+<style>body{margin:0}.tab-on{background:#eaedff;color:#004bc3;font-weight:600}</style>
+</head>
+<body class="bg-surface-canvas text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<div id="site-header"></div>
+
+<main class="w-full pt-20 flex-1">
+  <section class="bg-surface-card">
+    <div class="max-w-[1360px] mx-auto px-gutter py-space-xl space-y-space-sm">
+      <h1 class="font-headline-lg text-headline-lg font-bold tracking-tight">AI Lab</h1>
+      <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl">
+        Four checks that replace manual steps: can we keep a match guarantee, which listings need a person to look, does the
+        report checker catch bad sentences, and how well does every part score. All data is synthetic.
+      </p>
+      <div class="flex flex-wrap gap-2 pt-2" id="tabs">
+        <button data-t="feas" class="tab px-4 py-2.5 rounded-lg text-body-sm tab-on">Match guarantee</button>
+        <button data-t="screen" class="tab px-4 py-2.5 rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container-low">Listing screening</button>
+        <button data-t="verify" class="tab px-4 py-2.5 rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container-low">Report checker</button>
+        <button data-t="score" class="tab px-4 py-2.5 rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container-low">Scoreboard</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="max-w-[1360px] mx-auto px-gutter py-space-xl">
+
+    <!-- FEASIBILITY -->
+    <div id="p-feas" class="pane space-y-space-lg">
+      <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-4">
+        <h2 class="font-headline-md text-headline-md font-bold">Can we promise the matches?</h2>
+        <p class="text-body-sm text-on-surface-variant">Counts investors whose sector, budget and minimum EBITDA fit this business. It does not predict that anyone will enquire or buy.</p>
+        <form id="f-form" class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+          <label class="block"><span class="text-label-sm text-outline block mb-1">Sector</span>
+            <select id="f-sector" class="w-full px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm">
+              <option>Healthcare</option><option>Food &amp; Beverage</option><option>Beauty</option><option>Information Technology</option>
+              <option>Commercial Services</option><option>Retail</option><option>Logistics</option></select></label>
+          <label class="block"><span class="text-label-sm text-outline block mb-1">Emirate</span>
+            <select id="f-emirate" class="w-full px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm">
+              <option>Dubai</option><option>Abu Dhabi</option><option>Sharjah</option><option>Ajman</option><option>Other</option></select></label>
+          <label class="block"><span class="text-label-sm text-outline block mb-1">Asking price (AED)</span>
+            <input id="f-ask" type="number" min="0" step="50000" value="3000000" class="w-full px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm"/></label>
+          <label class="block"><span class="text-label-sm text-outline block mb-1">Annual revenue (AED)</span>
+            <input id="f-rev" type="number" min="0" step="50000" value="2000000" class="w-full px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm"/></label>
+          <label class="block"><span class="text-label-sm text-outline block mb-1">EBITDA (AED)</span>
+            <input id="f-ebitda" type="number" step="10000" value="400000" class="w-full px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm"/></label>
+          <label class="block"><span class="text-label-sm text-outline block mb-1">Years operating</span>
+            <input id="f-years" type="number" min="0" max="100" value="8" class="w-full px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm"/></label>
+          <label class="block"><span class="text-label-sm text-outline block mb-1">Guaranteed matches</span>
+            <input id="f-g" type="number" min="1" max="20" value="3" class="w-full px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm"/></label>
+          <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 text-body-sm"><input id="f-names" type="checkbox"/> Show top 5 investors (admin)</label>
+            <button type="submit" class="px-4 py-2.5 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-semibold">Check</button>
+          </div>
+        </form>
+        <p id="f-err" class="hidden text-danger-rose text-body-sm"></p>
+      </div>
+      <div id="f-out" class="hidden space-y-space-md"></div>
+    </div>
+
+    <!-- SCREENING -->
+    <div id="p-screen" class="pane hidden space-y-space-lg">
+      <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div><h2 class="font-headline-md text-headline-md font-bold">Moderation queue</h2>
+            <p class="text-body-sm text-on-surface-variant">A flag asks a person to look. It is not a finding of fraud. Only the flagged few need review.</p></div>
+          <div class="flex gap-2">
+            <button id="q-demo" class="px-4 py-2.5 rounded-xl bg-accent-gold-bg text-accent-gold font-semibold">Show invented examples</button>
+            <button id="q-live" class="px-4 py-2.5 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-semibold">Screen database listings</button>
+          </div>
+        </div>
+        <p id="q-err" class="hidden text-danger-rose text-body-sm"></p>
+        <p id="q-meta" class="text-body-sm text-outline"></p>
+        <div id="q-list" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- VERIFIER -->
+    <div id="p-verify" class="pane hidden space-y-space-lg">
+      <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-3">
+        <h2 class="font-headline-md text-headline-md font-bold">Try to sneak a bad sentence into a report</h2>
+        <p class="text-body-sm text-on-surface-variant">Sentences must cite a fact such as [F1]. Known facts: F1 Healthcare share up 8.7% to 15.3% (6.5 pts), F2 market figures, F3 Retail share down 19.3% to 10.9%, F5 listings forecast.</p>
+        <div class="flex flex-col md:flex-row gap-2">
+          <input id="v-text" maxlength="600" value="Healthcare rose 99% because of new regulations. [F1]" class="flex-1 px-3 py-2.5 rounded-xl bg-surface-container-low text-body-sm"/>
+          <button id="v-go" class="px-4 py-2.5 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-semibold">Check sentence</button>
+          <button id="v-all" class="px-4 py-2.5 rounded-xl bg-surface-container font-semibold">Run all 10 attacks</button>
+        </div>
+        <p id="v-err" class="hidden text-danger-rose text-body-sm"></p>
+        <div id="v-one"></div>
+        <p id="v-sum" class="font-label-numeric text-[18px] font-bold text-primary"></p>
+        <div id="v-list" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- SCOREBOARD -->
+    <div id="p-score" class="pane hidden space-y-space-lg">
+      <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div><h2 class="font-headline-md text-headline-md font-bold">Evaluation scoreboard</h2>
+            <p class="text-body-sm text-on-surface-variant">Measured on synthetic data. It shows the pipeline works, not how it performs on BXB data.</p></div>
+          <button id="s-refresh" class="px-4 py-2.5 rounded-xl bg-surface-container font-semibold">Recompute (slow)</button>
+        </div>
+        <p id="s-err" class="hidden text-danger-rose text-body-sm"></p>
+        <p id="s-meta" class="text-body-sm text-outline"></p>
+        <div id="s-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-space-md"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="/js/layout.js"></script>
+<script src="/js/api.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const E = BXB.esc;
+const chip = (t, c) => `<span class="px-2.5 py-1 rounded font-label-badge text-label-badge font-bold ${c}">${E(t)}</span>`;
+const err = (id, e) => { const n = $(id); n.textContent = e ? e.message : ""; n.classList.toggle("hidden", !e); };
+
+/* tabs */
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach((x) => { x.classList.remove("tab-on"); x.classList.add("text-on-surface-variant"); });
+  b.classList.add("tab-on"); b.classList.remove("text-on-surface-variant");
+  document.querySelectorAll(".pane").forEach((p) => p.classList.add("hidden"));
+  $("p-" + b.dataset.t).classList.remove("hidden");
+  if (b.dataset.t === "score" && !$("s-grid").innerHTML) loadScore();
+}));
+
+/* feasibility */
+const stCls = { safe: "bg-badge-emerald-bg text-badge-emerald-text", tight: "bg-accent-gold-bg text-accent-gold", at_risk: "bg-red-50 text-danger-rose", not_viable: "bg-red-50 text-danger-rose" };
+$("f-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault(); err("f-err", null);
+  const body = {
+    sector: $("f-sector").value, emirate: $("f-emirate").value, asking_price: +$("f-ask").value, annual_revenue: +$("f-rev").value,
+    ebitda: +$("f-ebitda").value, years_operating: +$("f-years").value, ownership_pct: 100, anonymous: true, guarantee: +$("f-g").value,
+  };
+  try {
+    const r = await BXB.post("/bxb/ai/feasibility", { matches: $("f-names").checked ? 5 : 0 }, body);
+    const cut = r.what_if_price_cut.map((w) => `<tr><td class="py-2 px-3">${w.price_cut_pct}% cut</td><td class="py-2 px-3 font-label-numeric">${BXB.aed(w.asking_price)}</td><td class="py-2 px-3 font-label-numeric">${w.investors_passing}</td></tr>`).join("");
+    const why = Object.entries(r.exclusion_reasons).map(([k, v]) => `<li>${E(k)}: <b>${v}</b></li>`).join("");
+    const top = (r.top_matches || []).map((m) => `<li class="p-3 rounded-xl bg-surface-container-low"><b>#${m.rank} ${E(m.name)}</b> (${E(m.country)}), score ${m.score}<br><span class="text-outline">${m.reasons.map(E).join("; ")}</span></li>`).join("");
+    $("f-out").innerHTML = `
+      <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="space-y-2">${chip(r.status.replace("_", " "), stCls[r.status])}<p class="text-body-md">${E(r.message)}</p>${r.suggestion ? `<p class="text-body-sm text-accent-gold">${E(r.suggestion)}</p>` : ""}</div>
+        <div class="text-right"><div class="font-label-numeric text-[32px] font-bold text-primary">${r.investors_passing} / ${r.investors_total}</div><span class="text-label-sm text-outline">investors pass the hard filters (${r.investors_interested_in_sector} like the sector)</span></div></div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
+        <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg"><h3 class="font-headline-sm text-headline-sm font-semibold mb-2">If the price changes</h3>
+          <table class="w-full text-left text-body-sm"><thead><tr class="text-outline text-label-sm"><th class="py-2 px-3">Change</th><th class="py-2 px-3">Price</th><th class="py-2 px-3">Investors</th></tr></thead><tbody class="divide-y divide-border-subtle">${cut}</tbody></table></div>
+        <div class="bg-surface-card rounded-2xl shadow-sm p-space-lg"><h3 class="font-headline-sm text-headline-sm font-semibold mb-2">Why investors were excluded</h3><ul class="text-body-sm space-y-1">${why || "<li>None</li>"}</ul></div></div>
+      ${top ? `<div class="bg-surface-card rounded-2xl shadow-sm p-space-lg"><h3 class="font-headline-sm text-headline-sm font-semibold mb-2">Best-fit investors</h3><ul class="space-y-2 text-body-sm">${top}</ul></div>` : ""}
+      <p class="text-body-sm text-outline">${E(r.note)}</p>`;
+    $("f-out").classList.remove("hidden");
+  } catch (e) { err("f-err", e); }
+});
+
+/* screening */
+const sevCls = { high: "bg-red-50 text-danger-rose", medium: "bg-accent-gold-bg text-accent-gold", low: "bg-surface-container text-on-surface-variant" };
+const scrCls = { hold: "bg-red-50 text-danger-rose", review: "bg-accent-gold-bg text-accent-gold", clear: "bg-badge-emerald-bg text-badge-emerald-text" };
+function screenCard(title, sub, r) {
+  return `<div class="p-4 rounded-xl bg-surface-container-low space-y-2">
+    <div class="flex flex-wrap items-center gap-2 justify-between"><b>${E(title)}</b><span>${chip(r.status, scrCls[r.status])} <span class="font-label-numeric">${r.score}/100</span></span></div>
+    ${sub ? `<p class="text-body-sm text-outline">${E(sub)}</p>` : ""}
+    <ul class="space-y-1">${r.flags.map((f) => `<li class="text-body-sm">${chip(f.severity, sevCls[f.severity])} ${E(f.message)}</li>`).join("") || '<li class="text-body-sm text-badge-emerald-text">No flags. Goes straight through.</li>'}</ul></div>`;
+}
+$("q-demo").addEventListener("click", async () => {
+  err("q-err", null);
+  try {
+    const r = await BXB.get("/bxb/ai/screen/demo");
+    $("q-meta").textContent = r.note;
+    $("q-list").innerHTML = r.cases.map((c) => screenCard(c.title, c.text, c)).join("");
+  } catch (e) { err("q-err", e); }
+});
+$("q-live").addEventListener("click", async () => {
+  err("q-err", null);
+  try {
+    const r = await BXB.get("/bxb/ai/screen/queue", { min_status: "review", limit: 30 });
+    $("q-meta").textContent = `${r.screened.toLocaleString()} listings screened, ${r.flagged} flagged. ${r.note}`;
+    $("q-list").innerHTML = r.items.map((i) => screenCard(`Listing #${i.listing_id}: ${i.sector}, ${i.emirate}`, `${i.listing_status}, asking ${BXB.aed(i.asking_price)}`, { status: i.screen_status, score: i.score, flags: i.flags })).join("")
+      || '<p class="text-body-sm text-on-surface-variant">Nothing flagged.</p>';
+  } catch (e) { err("q-err", e); }
+});
+
+/* verifier */
+function verdict(c) {
+  return `<div class="p-3 rounded-xl ${c.ok ? "bg-badge-emerald-bg" : "bg-red-50"} space-y-1">
+    <div>${chip(c.ok ? "Accepted" : "Rejected", c.ok ? "bg-surface-card text-badge-emerald-text" : "bg-surface-card text-danger-rose")} <span class="text-body-sm">${E(c.sentence)}</span></div>
+    ${c.violations.length ? `<ul class="text-body-sm text-danger-rose list-disc pl-5">${c.violations.map((v) => `<li>${E(v)}</li>`).join("")}</ul>` : ""}
+    ${!c.ok ? `<p class="text-body-sm"><b>Published instead:</b> ${c.published ? E(c.published.replace(/\s*\[F\d+\]/g, "")) : "nothing (sentence dropped)"}</p>` : ""}</div>`;
+}
+$("v-go").addEventListener("click", async () => {
+  err("v-err", null);
+  try { $("v-one").innerHTML = verdict(await BXB.post("/bxb/ai/verify", {}, { sentence: $("v-text").value })); } catch (e) { err("v-err", e); }
+});
+$("v-all").addEventListener("click", async () => {
+  err("v-err", null);
+  try {
+    const r = await BXB.get("/bxb/ai/verify/demo"), s = r.summary;
+    $("v-sum").textContent = `${s.caught}/${s.attacks} bad sentences rejected. ${s.clean_passed}/${s.clean_sentences} correct sentences accepted.`;
+    $("v-list").innerHTML = r.attacks.map((a) => `<div><span class="text-label-sm text-outline">${E(a.label)}</span>${verdict(a)}</div>`).join("");
+  } catch (e) { err("v-err", e); }
+});
+
+/* scoreboard */
+function leaves(o, p = "", out = []) {
+  if (o && typeof o === "object") Object.entries(o).forEach(([k, v]) => leaves(v, p ? `${p} / ${k}` : k, out));
+  else out.push([p, o]);
+  return out;
+}
+function renderScore(d) {
+  if (d.status === "not_run") { $("s-meta").textContent = "Not computed yet. Use Recompute."; $("s-grid").innerHTML = ""; return; }
+  $("s-meta").textContent = `Generated ${d.generated_at}. ${d.disclaimer}`;
+  $("s-grid").innerHTML = Object.entries(d.sections).map(([name, s]) => `
+    <div class="bg-surface-container-low rounded-2xl p-space-md space-y-2">
+      <div class="flex items-center justify-between"><h3 class="font-headline-sm text-headline-sm font-semibold">${E(name.replace(/_/g, " "))}</h3>
+        ${s.ok ? chip(`${s.seconds}s`, "bg-badge-emerald-bg text-badge-emerald-text") : chip("failed", "bg-red-50 text-danger-rose")}</div>
+      ${s.ok ? `<dl class="text-body-sm space-y-1">${leaves(s.result).filter(([k]) => !/note$/.test(k)).map(([k, v]) => `<div class="flex justify-between gap-3"><dt class="text-outline">${E(k)}</dt><dd class="font-label-numeric text-right">${E(v)}</dd></div>`).join("")}</dl>` : `<p class="text-body-sm text-danger-rose">${E(s.error)}</p>`}
+    </div>`).join("");
+}
+async function loadScore() { err("s-err", null); try { renderScore(await BXB.get("/bxb/ai/scoreboard")); } catch (e) { err("s-err", e); } }
+$("s-refresh").addEventListener("click", async () => {
+  err("s-err", null); $("s-meta").textContent = "Recomputing, this takes a while…";
+  try { renderScore(await BXB.post("/bxb/ai/scoreboard/refresh")); } catch (e) { err("s-err", e); }
+});
+</script>
+</body>
+</html>
